@@ -1,0 +1,88 @@
+.App {
+  position: relative;
+  min-height: 100vh;
+  background-color: #282c34;
+  padding-bottom: 55px;
+}
+
+.header {
+  display: flex;
+  padding: 16px;
+  font-size: 20px;
+  color: white;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.main {
+  padding: 16px;
+  max-width: 100%;
+  overflow: scroll;
+}
+
+.footer {
+  padding: 8px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-top: 1px solid white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.footer a {
+  font-weight: bold;
+  color: white;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+.cell {
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items:center;
+  justify-content: center;
+  border: 0.5px solid white;
+  position: relative;
+}
+
+.cell span {
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+.inDragArea {
+  border: 0.5px solid rgba(0, 181, 226, 0.6);
+}
+
+.isInDragArea::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 181, 226, 0.6);
+}
+
+.row {
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
