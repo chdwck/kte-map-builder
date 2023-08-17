@@ -84,7 +84,6 @@ const App: Component = () => {
 
   function updateStateFromSaved() {
     const stringifiedMatrix = localStorage.getItem(localStorageKey);
-    console.log(stringifiedMatrix);
     if (!stringifiedMatrix) {
       setSelected(nothing.id);
       setDragVertices([-1, -1, -1, -1]);
