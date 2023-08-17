@@ -248,7 +248,7 @@ const App: Component = () => {
   return (
     <div class={styles.App}>
       <header class={styles.header}>
-        <h1>2D Array Builder</h1>
+        <h1>Kill the Evil Map Builder</h1>
       </header>
 
       <main class={styles.main}>
