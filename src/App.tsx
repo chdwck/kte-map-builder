@@ -37,10 +37,19 @@ const App: Component = () => {
     dragVertices,
     (value, compare) => {
       const [x, y] = value;
-      const [xStart, yStart, xEnd, yEnd] = compare;
+      const [xStart, yStart, xEnd, yEnd] = getXYRanges(compare);
       return xStart <= x && x <= xEnd && yStart <= y && y <= yEnd;
     },
   );
+
+  function getXYRanges(range: Vec4): Vec4 {
+    const [xStart, yStart, xEnd, yEnd] = range;
+    const minX = Math.min(xStart, xEnd);
+    const maxX = Math.max(xStart, xEnd);
+    const minY = Math.min(yStart, yEnd);
+    const maxY = Math.max(yStart, yEnd);
+    return [minX, minY, maxX, maxY];
+  }
 
   const matrix = createMemo<number[][]>(() => {
     const _matrix: number[][] = [];
@@ -176,9 +185,12 @@ const App: Component = () => {
     }
     e.preventDefault();
     const [x, y] = xy;
-    if (dragVertices().some((vCmpnt) => vCmpnt > -1)) {
-      setDragVertices((prev) => [...prev.slice(0, 2), x, y] as Vec4);
+    const isDragging = dragVertices().some((vCmpnt) => vCmpnt > -1);
+    if (!isDragging) {
+      return;
     }
+
+    setDragVertices((prev) => [...prev.slice(0, 2), x, y] as Vec4);
   }
 
   function handleDragEnd(e: Event) {
@@ -186,10 +198,9 @@ const App: Component = () => {
     if (!xy) {
       return;
     }
-    const [xEnd, yEnd] = xy;
     e.preventDefault();
     const _dragVertices = dragVertices();
-    const [xStart, yStart] = _dragVertices;
+    const [xStart, yStart, xEnd, yEnd] = getXYRanges(_dragVertices.slice(0, 2).concat(xy) as Vec4);
 
     const _selected = selected();
     setCellStyleMap((prev) => {
