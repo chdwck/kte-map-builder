@@ -251,7 +251,8 @@ const App: Component = () => {
         // Nobody likes hidden stuff being done under the hood!
         alert("Copied to clipboard");
       })
-      .catch(() => {
+      .catch((e) => {
+        console.error(e);
         alert("Failed to Copy to clipboard");
       });
   }
