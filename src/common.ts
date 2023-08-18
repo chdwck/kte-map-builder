@@ -7,7 +7,7 @@ export type CellStyle = {
 export const nothing: CellStyle = {
   id: "n",
   name: "Nothing",
-  color: "black",
+  color: "blue",
 };
 
 export const floor: CellStyle = {
@@ -40,6 +40,24 @@ export const treasure: CellStyle = {
   color: "#FFB319",
 };
 
+export const start: CellStyle = {
+  id: "S",
+  name: "Start",
+  color: "pink",
+};
+
+export const end: CellStyle = {
+  id: "F",
+  name: "End",
+  color: "purple",
+};
+
+export const lore: CellStyle = {
+  id: "L",
+  name: "Lore",
+  color: "yellow",
+};
+
 export const cellStyles = {
   [nothing.id]: nothing,
   [floor.id]: floor,
@@ -47,4 +65,7 @@ export const cellStyles = {
   [enemy.id]: enemy,
   [health.id]: health,
   [treasure.id]: treasure,
+  [start.id]: start,
+  [end.id]: end,
+  [lore.id]: lore
 } as const;
