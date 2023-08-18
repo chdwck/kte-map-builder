@@ -6,6 +6,8 @@ import {
   createSelector,
   createEffect,
   onMount,
+  Match,
+  Switch,
 } from "solid-js";
 
 import styles from "./App.module.css";
@@ -20,6 +22,7 @@ type Vec4 = [number, number, number, number];
 
 const App: Component = () => {
   const [isMounted, setIsMounted] = createSignal(false);
+  const [isShowingCode, setIsShowingCode] = createSignal(false);
   const [mapHeight, setMapHeight] = createSignal(10);
   const [mapWidth, setMapWidth] = createSignal(10);
   const [cellSize, setCellSize] = createSignal(40);
@@ -60,6 +63,25 @@ const App: Component = () => {
       }
     }
     return _matrix;
+  });
+
+  const matrixAsCode = createMemo<string>(() => {
+    let str = "[";
+    const height = mapHeight();
+    const width = mapWidth();
+    for (let y = 0; y < height; y++) {
+      str += "\n    [";
+      for (let x = 0; x < width; x++) {
+        str += getCellId(x, y);
+        if (x !== width - 1) {
+          str += ", ";
+        }
+      }
+      str += "],";
+    }
+    str += "\n]";
+
+    return str;
   });
 
   onMount(() => {
@@ -142,6 +164,10 @@ const App: Component = () => {
     setCellSize(parseInt(target.value));
   }
 
+  function toggleCodeView() {
+    setIsShowingCode((prev) => !prev);
+  }
+
   function getXY(e: Event): Vec2 | undefined {
     const target = e.target as HTMLDivElement;
     const x = target.dataset.x;
@@ -200,7 +226,9 @@ const App: Component = () => {
     }
     e.preventDefault();
     const _dragVertices = dragVertices();
-    const [xStart, yStart, xEnd, yEnd] = getXYRanges(_dragVertices.slice(0, 2).concat(xy) as Vec4);
+    const [xStart, yStart, xEnd, yEnd] = getXYRanges(
+      _dragVertices.slice(0, 2).concat(xy) as Vec4,
+    );
 
     const _selected = selected();
     setCellStyleMap((prev) => {
@@ -228,33 +256,16 @@ const App: Component = () => {
     updateStateFromSaved();
   }
 
-  function copyDataToClipboard() {
-    let str = "[";
-    const height = mapHeight();
-    const width = mapWidth();
-    for (let y = 0; y < height; y++) {
-      str += "\n    [";
-      for (let x = 0; x < width; x++) {
-        str += getCellId(x, y);
-        if (x !== width - 1) {
-          str += ", ";
-        }
-      }
-      str += "],";
+  function onlyAllowCopy(e: KeyboardEvent) {
+    const isCopy = (e.metaKey || e.ctrlKey) && e.key === "c";
+    if (!isCopy) {
+      e.preventDefault();
     }
-    str += "\n]";
+  }
 
-    navigator.clipboard
-      .writeText(str)
-      .then(() => {
-        // Alert the user that the action took place.
-        // Nobody likes hidden stuff being done under the hood!
-        alert("Copied to clipboard");
-      })
-      .catch((e) => {
-        console.error(e);
-        alert("Failed to Copy to clipboard");
-      });
+  function selectText(e: Event) {
+    const target = e.target as HTMLTextAreaElement;
+    target.select();
   }
 
   return (
@@ -269,7 +280,6 @@ const App: Component = () => {
             Last saved at <time>{lastSavedFmt()}</time>
           </p>
           <button onClick={clearSavedData}>Clear Data</button>
-          <button onClick={copyDataToClipboard}>Copy Array to Clipboard</button>
         </section>
         <section>
           <h2>Dimensions</h2>
@@ -311,38 +321,58 @@ const App: Component = () => {
 
         <br />
 
-        <table
-          onClick={updateCellStyle}
-          onMouseDown={handleDragStart}
-          onMouseOver={handleDragProgress}
-          onMouseUp={handleDragEnd}
-        >
-          <For each={matrix()} fallback={<p>Loading</p>}>
-            {(row, y) => (
-              <tr class={styles.row}>
-                <For each={row}>
-                  {(_, x) => (
-                    <td
-                      data-x={x()}
-                      data-y={y()}
-                      style={{
-                        width: `${cellSize()}px`,
-                        height: `${cellSize()}px`,
-                        background: cellStyles[getCellId(x(), y())].color,
-                      }}
-                      classList={{
-                        [styles.cell]: true,
-                        [styles.inDragArea]: isInDragArea([x(), y()]),
-                      }}
-                    >
-                      <span>{getCellId(x(), y())}</span>
-                    </td>
-                  )}
-                </For>
-              </tr>
-            )}
-          </For>
-        </table>
+        <button onClick={toggleCodeView}>Toggle Code View</button>
+        <br />
+
+        <Switch>
+          <Match when={isShowingCode()}>
+            <textarea
+              style={{
+                height: `${mapHeight() * 20}px`,
+                width: `${mapWidth() * 40}px`,
+              }}
+              class={styles.copyCodeArea}
+              onKeyDown={onlyAllowCopy}
+              onClick={selectText}
+            >
+              {matrixAsCode()}
+            </textarea>
+          </Match>
+          <Match when={!isShowingCode()}>
+            <table
+              onClick={updateCellStyle}
+              onMouseDown={handleDragStart}
+              onMouseOver={handleDragProgress}
+              onMouseUp={handleDragEnd}
+            >
+              <For each={matrix()} fallback={<p>Loading</p>}>
+                {(row, y) => (
+                  <tr class={styles.row}>
+                    <For each={row}>
+                      {(_, x) => (
+                        <td
+                          data-x={x()}
+                          data-y={y()}
+                          style={{
+                            width: `${cellSize()}px`,
+                            height: `${cellSize()}px`,
+                            background: cellStyles[getCellId(x(), y())].color,
+                          }}
+                          classList={{
+                            [styles.cell]: true,
+                            [styles.inDragArea]: isInDragArea([x(), y()]),
+                          }}
+                        >
+                          <span>{getCellId(x(), y())}</span>
+                        </td>
+                      )}
+                    </For>
+                  </tr>
+                )}
+              </For>
+            </table>
+          </Match>
+        </Switch>
       </main>
 
       <footer class={styles.footer}>
