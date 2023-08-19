@@ -4,7 +4,6 @@ import {
   createMemo,
   For,
   createSelector,
-  createEffect,
   onMount,
   Match,
   Switch,
@@ -21,7 +20,6 @@ type Vec2 = [number, number];
 type Vec4 = [number, number, number, number];
 
 const App: Component = () => {
-  const [isMounted, setIsMounted] = createSignal(false);
   const [isShowingCode, setIsShowingCode] = createSignal(false);
   const [mapHeight, setMapHeight] = createSignal(10);
   const [mapWidth, setMapWidth] = createSignal(10);
@@ -31,6 +29,7 @@ const App: Component = () => {
   );
   const [lastSaved, setLastSaved] = createSignal(Date.now());
   const lastSavedFmt = createMemo(() => new Date(lastSaved()).toLocaleString());
+  const [localUndoState, setLocalUndoState] = createSignal<string[]>([]);
 
   const [selected, setSelected] = createSignal(nothing.id);
   const isSelected = createSelector(selected);
@@ -85,18 +84,28 @@ const App: Component = () => {
   });
 
   onMount(() => {
-    updateStateFromSaved();
-    setIsMounted(true);
+    updateFromLocalStorage();
   });
 
-  createEffect(() => {
-    if (!isMounted()) {
-      return;
+  function saveChanges() {
+    const prev = localStorage.getItem(localStorageKey);
+    if (prev) {
+      pushToLocalUndoState(prev);
     }
     const matrixStr = JSON.stringify(buildHydratedMatrix());
     localStorage.setItem(localStorageKey, matrixStr);
     setLastSaved(Date.now());
-  });
+  }
+
+  function pushToLocalUndoState(stringifiedMatrix: string) {
+    let _localUndoState = localUndoState();
+
+    if (_localUndoState.length >= 10) {
+      _localUndoState = _localUndoState.slice(1);
+    }
+
+    _localUndoState.push(stringifiedMatrix);
+  }
 
   function buildHydratedMatrix(): string[][] {
     const _matrix: string[][] = [];
@@ -113,8 +122,7 @@ const App: Component = () => {
     return _matrix;
   }
 
-  function updateStateFromSaved() {
-    const stringifiedMatrix = localStorage.getItem(localStorageKey);
+  function updateStateFromSaved(stringifiedMatrix: string | null | undefined) {
     if (!stringifiedMatrix) {
       setSelected(nothing.id);
       setDragVertices([-1, -1, -1, -1]);
@@ -145,6 +153,11 @@ const App: Component = () => {
     }
   }
 
+  function updateFromLocalStorage() {
+    const stringifiedMatrix = localStorage.getItem(localStorageKey);
+    updateStateFromSaved(stringifiedMatrix);
+  }
+
   function getCellStyleKey(x: number, y: number) {
     return `${x}_${y}`;
   }
@@ -152,11 +165,13 @@ const App: Component = () => {
   function updateWidth(e: Event) {
     const target = e.target as HTMLInputElement;
     setMapWidth(parseInt(target.value));
+    saveChanges();
   }
 
   function updateHeight(e: Event) {
     const target = e.target as HTMLInputElement;
     setMapHeight(parseInt(target.value));
+    saveChanges();
   }
 
   function updateCellSize(e: Event) {
@@ -191,6 +206,7 @@ const App: Component = () => {
       prev[key] = _selected;
       return prev;
     });
+    saveChanges();
   }
 
   function handleDragStart(e: Event) {
@@ -253,7 +269,7 @@ const App: Component = () => {
 
   function clearSavedData() {
     localStorage.removeItem(localStorageKey);
-    updateStateFromSaved();
+    updateFromLocalStorage();
   }
 
   function onlyAllowCopy(e: KeyboardEvent) {
@@ -266,6 +282,17 @@ const App: Component = () => {
   function selectText(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     target.select();
+  }
+
+  function undo() {
+    const _localUndoState = localUndoState();
+    const lastState = _localUndoState.pop();
+    setLocalUndoState(_localUndoState);
+    updateStateFromSaved(lastState);
+  }
+
+  function expandFloors() {
+    saveChanges();
   }
 
   return (
@@ -303,6 +330,15 @@ const App: Component = () => {
         </section>
 
         <br />
+        <section>
+          <h2>Mutations</h2>
+          <div class={styles.controls}>
+            <button onClick={undo}>Undo</button>
+            <button onClick={expandFloors}>1 to 4 on floor cells</button>
+          </div>
+        </section>
+
+        <br />
 
         <section>
           <h2>Cell Styles</h2>
@@ -321,7 +357,10 @@ const App: Component = () => {
 
         <br />
 
-        <button onClick={toggleCodeView}>Toggle Code View</button>
+        <div class={styles.controls}>
+          <button onClick={toggleCodeView}>Toggle Code View</button>
+        </div>
+
         <br />
 
         <Switch>
