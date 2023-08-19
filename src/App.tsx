@@ -105,6 +105,7 @@ const App: Component = () => {
     }
 
     _localUndoState.push(stringifiedMatrix);
+    setLocalUndoState(_localUndoState);
   }
 
   function buildHydratedMatrix(): string[][] {
@@ -259,6 +260,7 @@ const App: Component = () => {
     });
 
     setDragVertices([-1, -1, -1, -1]);
+    saveChanges();
   }
 
   function getCellId(x: number, y: number) {
@@ -289,10 +291,6 @@ const App: Component = () => {
     const lastState = _localUndoState.pop();
     setLocalUndoState(_localUndoState);
     updateStateFromSaved(lastState);
-  }
-
-  function expandFloors() {
-    saveChanges();
   }
 
   return (
@@ -334,7 +332,6 @@ const App: Component = () => {
           <h2>Mutations</h2>
           <div class={styles.controls}>
             <button onClick={undo}>Undo</button>
-            <button onClick={expandFloors}>1 to 4 on floor cells</button>
           </div>
         </section>
 
