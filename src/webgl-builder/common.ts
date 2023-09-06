@@ -29,65 +29,87 @@ export const nothing: CellStyle = {
     shaderColor: [0, 0, 1, 1]
 };
 
+function asVec4(hexStr: string): Vec4 {
+ const r = parseInt(hexStr.slice(1, 3), 16) / 255;
+ const g = parseInt(hexStr.slice(3, 5), 16) / 255;
+ const b = parseInt(hexStr.slice(5, 7), 16) / 255;
+ return [r, g, b, 1];
+}
+
+const floorColor = '#e3e4db';
 export const floor: CellStyle = {
     id: '_',
     name: 'Floor',
-    color: '#e3e4db',
-    shaderColor: [227 / 255, 228 / 255, 219 / 255, 1]
+    color: floorColor,
+    shaderColor: asVec4(floorColor)
 }
 
-// export const wall: CellStyle = {
-//   id: "W",
-//   name: "Wall",
-//   color: "#342e37",
-// };
-//
-// export const enemy: CellStyle = {
-//   id: "E",
-//   name: "Enemy",
-//   color: "#BB0000",
-// };
-//
-// export const health: CellStyle = {
-//   id: "H",
-//   name: "Health",
-//   color: "#00B140",
-// };
-//
-// export const treasure: CellStyle = {
-//   id: "T",
-//   name: "Treasure",
-//   color: "#FFB319",
-// };
-//
-// export const start: CellStyle = {
-//   id: "S",
-//   name: "Start",
-//   color: "pink",
-// };
-//
-// export const end: CellStyle = {
-//   id: "F",
-//   name: "End",
-//   color: "purple",
-// };
-//
-// export const lore: CellStyle = {
-//   id: "L",
-//   name: "Lore",
-//   color: "yellow",
-// };
+const wallColor = "#342e37";
+export const wall: CellStyle = {
+  id: "W",
+  name: "Wall",
+  color: wallColor,
+  shaderColor: asVec4(wallColor)
+};
+
+const enemyColor = "#BB0000";
+export const enemy: CellStyle = {
+  id: "E",
+  name: "Enemy",
+  color: enemyColor,
+  shaderColor: asVec4(enemyColor)
+};
+
+const healthColor = "#00B140"; 
+export const health: CellStyle = {
+  id: "H",
+  name: "Health",
+  color: healthColor,
+  shaderColor: asVec4(healthColor)
+};
+
+const treasureColor = "#FFB319";
+export const treasure: CellStyle = {
+  id: "T",
+  name: "Treasure",
+  color: treasureColor,
+  shaderColor: asVec4(treasureColor)
+};
+
+const startColor = "#ffc0cb";
+export const start: CellStyle = {
+  id: "S",
+  name: "Start",
+  color: startColor,
+  shaderColor: asVec4(startColor)
+};
+
+const endColor = "#4b0082";
+export const end: CellStyle = {
+  id: "F",
+  name: "End",
+  color: endColor,
+  shaderColor: asVec4(endColor)
+};
+
+const loreColor = "#ffff00";
+export const lore: CellStyle = {
+  id: "L",
+  name: "Lore",
+  color: loreColor,
+  shaderColor: asVec4(loreColor)
+};
 
 export const cellStyles = {
     [nothing.id]: nothing,
     [floor.id]: floor,
-    // [wall.id]: wall,
-    // [enemy.id]: enemy,
-    // [health.id]: health,
-    // [treasure.id]: treasure,
-    // [start.id]: start,
-    // [end.id]: end,
-    // [lore.id]: lore
+    [wall.id]: wall,
+    [enemy.id]: enemy,
+    [health.id]: health,
+    [treasure.id]: treasure,
+    [start.id]: start,
+    [end.id]: end,
+    [lore.id]: lore
 } as const;
 
 export type CellStyleKey = keyof typeof cellStyles; 
