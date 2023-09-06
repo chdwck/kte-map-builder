@@ -1,10 +1,10 @@
 import commonStyles from "../common.module.css";
+import { CellStyleKey, cellStyles } from "../webgl-builder/common";
 import styles from './CellStyleButton.module.css';
-import { cellStyles } from "../common";
 import { Component, JSX, createMemo } from "solid-js";
 
 type CellStyleButtonProps = {
-  cellStyleId: keyof typeof cellStyles;
+  cellStyleId: CellStyleKey;
   active: boolean;
   onClick: JSX.EventHandler<HTMLButtonElement, Event>
 };

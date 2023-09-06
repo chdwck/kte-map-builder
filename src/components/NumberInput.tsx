@@ -4,6 +4,7 @@ import commonStyles from '../common.module.css';
 type NumberInputProps = {
   label: string;
   value: number;
+  onBlur: JSX.EventHandler<HTMLInputElement, Event>;
   onChange: JSX.EventHandler<HTMLInputElement, Event>;
 };
 
@@ -17,7 +18,8 @@ const NumberInput: Component<NumberInputProps> = (props) => {
         value={props.value}
         type="number"
         min={0}
-        max={100}
+        max={1000}
+        onBlur={(e) => props.onBlur(e)}
         onChange={(e) => props.onChange(e)}
       />
     </span>
