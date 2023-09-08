@@ -58,3 +58,21 @@ export function getCellStyle(state: MapBuilderState, pos: Vec2): CellStyle {
 export function cellKey(pos: Vec2): string {
     return `${pos[0]}_${pos[1]}`;
 }
+
+export function stringifyMatrix(state: MapBuilderState) : string {
+    let str = "[";
+    for (let y = 0; y < state.options.cellCountY; y++) {
+      str += "\n    [";
+      for (let x = 0; x < state.options.cellCountX; x++) {
+        str += getCellStyle(state, [x, y]).id;
+        if (x !== state.options.cellCountX - 1) {
+          str += ", ";
+        }
+      }
+      str += "],";
+    }
+    str += "\n]";
+
+    return str;
+
+}

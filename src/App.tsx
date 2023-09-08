@@ -1,32 +1,41 @@
 import {
     createSignal,
     Component,
-    For,
-    createSelector,
     onMount,
+    createMemo,
+    createEffect
 } from "solid-js";
 
 import styles from "./App.module.css";
 import NumberInput from "./components/NumberInput";
 import {
     nothing,
-    cellStyles,
     Vec2,
     Result,
     CellStyleKey
 } from "./webgl-builder/common";
-import CellStyleButton from "./components/CellStyleButton";
 import { initBuilder, updateArea, updateDragCoords, updateOption } from "./webgl-builder";
-import { initState } from "./webgl-builder/state";
+import { initState, stringifyMatrix } from "./webgl-builder/state";
 import CellStyleSelector from "./components/CellStyleSelector";
+
+function isMobileWidth() {
+    return window.innerWidth <= 960;
+}
 
 const App: Component = () => {
     let canvasRef: HTMLCanvasElement | null = null;
+    let textareaRef: HTMLTextAreaElement | null = null;
     const state = initState();
     const [width, setWidth] = createSignal(state.options.cellCountX);
     const [height, setHeight] = createSignal(state.options.cellCountY);
     const [cellSize, setCellSize] = createSignal(state.options.cellSize);
     const [selected, setSelected] = createSignal<CellStyleKey>(nothing.id);
+    const [showArray, setShowArray] = createSignal(false);
+    const [stringMatrix, setStringMatrix] = createSignal('');
+    const [isEditing, setIsEditing] = createSignal(true);
+    const [isMobile, setIsMobile] = createSignal(isMobileWidth());
+
+    const editModeEmoji = createMemo(() => !isEditing() ? 'Scrolling' : 'Editing');
 
     onMount(() => {
         if (canvasRef !== null) {
@@ -39,15 +48,28 @@ const App: Component = () => {
         window.addEventListener("touchend", handleUp);
         window.addEventListener("mousemove", handleMove);
         window.addEventListener("touchmove", handleMove);
+
+        window.addEventListener("resize", handleResize)
     });
+
+    function handleResize() {
+        setIsMobile(isMobileWidth())
+    }
 
     function refresh() {
         initBuilder(state, canvasRef!);
     }
 
     function getRelativeXY(e: MouseEvent | TouchEvent): Result<Vec2> {
+        if (!isEditing() && isMobile()) {
+            return [new Error("Not in edit mode")];
+        }
         if (!canvasRef) {
             return [new Error("Canvas element not in DOM")];
+        }
+
+        if (e.target !== canvasRef) {
+            return [new Error("Not on canvas")];
         }
 
         const rect = canvasRef.getBoundingClientRect();
@@ -74,7 +96,9 @@ const App: Component = () => {
             return;
         }
 
-        e.preventDefault();
+        if (Object.hasOwn(e, 'clientX')) {
+            e.preventDefault();
+        }
 
         updateDragCoords(state, xy)
     }
@@ -85,7 +109,9 @@ const App: Component = () => {
             updateDragCoords(state)
             return;
         }
-        e.preventDefault();
+        if (Object.hasOwn(e, 'clientX')) {
+            e.preventDefault();
+        }
         updateDragCoords(state, undefined, xy)
     }
 
@@ -117,8 +143,29 @@ const App: Component = () => {
 
     function updateSelected(e: Event) {
         const target = e.target as HTMLSelectElement;
-        
+
         setSelected(target.value);
+    }
+
+    function selectText() {
+        if (textareaRef) {
+            textareaRef.select();
+        }
+    }
+
+    function toggleCodeView() {
+        const next = !showArray();
+        if (next) {
+            setStringMatrix(stringifyMatrix(state));
+            setTimeout(() => {
+                selectText();
+            }, 0)
+        }
+        setShowArray(next)
+    }
+
+    function toggleEditMode() {
+        setIsEditing(!isEditing());
     }
 
     return (
@@ -126,14 +173,30 @@ const App: Component = () => {
             <header class={styles.header}>
                 <h1>Kill the Evil Map Builder</h1>
                 <div class={styles.controls}>
-                <CellStyleSelector value={selected()} onChange={updateSelected} />
-                    <NumberInput value={width()} label="Width" onBlur={refresh} onChange={updateWidth} />
-                    <NumberInput value={height()} label="Height" onBlur={refresh} onChange={updateHeight} />
+                    {isMobile() && <button onClick={toggleEditMode}>{editModeEmoji()}</button>}
+                    <button onClick={toggleCodeView}>Copy Data View</button>
+                    <CellStyleSelector value={selected()} onChange={updateSelected} />
+                    <NumberInput value={width()} label="W" onBlur={refresh} onChange={updateWidth} />
+                    <NumberInput value={height()} label="H" onBlur={refresh} onChange={updateHeight} />
                     <NumberInput value={cellSize()} label="Cell Size" onBlur={refresh} onChange={updateCellSize} />
                 </div>
             </header>
 
-            <main class={styles.main}>
+            <main class={styles.main} style={{ overflow: isEditing() && isMobile() ? 'hidden' : 'scroll' }}>
+                <dialog open={showArray()} class={styles.dialog}>
+                    <div>
+                        <h2>Copy Map Data</h2>
+                        <textarea
+                            ref={ref => textareaRef = ref}
+                            onChange={e => e.preventDefault()}
+                            onFocus={e => e.preventDefault()}
+                            onClick={selectText}
+                        >
+                            {stringMatrix()}
+                        </textarea>
+                        <button onClick={toggleCodeView}>Close</button>
+                    </div>
+                </dialog>
                 <canvas ref={ref => canvasRef = ref} />
             </main>
         </div>

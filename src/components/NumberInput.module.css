@@ -4,3 +4,7 @@
   align-items: center;
 }
 
+.control label {
+    font-size: 16px;
+}
+

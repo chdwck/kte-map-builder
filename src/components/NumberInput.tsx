@@ -1,5 +1,5 @@
 import { Component, JSX, createUniqueId } from "solid-js";
-import commonStyles from '../common.module.css';
+import styles from './NumberInput.module.css';
 
 type NumberInputProps = {
     label: string;
@@ -11,7 +11,7 @@ type NumberInputProps = {
 const NumberInput: Component<NumberInputProps> = (props) => {
     const id = createUniqueId();
     return (
-        <span class={commonStyles.control}>
+        <span class={styles.control}>
             <label for={id}>{props.label}</label>
             <input
                 id={id}
