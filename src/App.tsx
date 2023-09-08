@@ -18,6 +18,7 @@ import {
 import CellStyleButton from "./components/CellStyleButton";
 import { initBuilder, updateArea, updateDragCoords, updateOption } from "./webgl-builder";
 import { initState } from "./webgl-builder/state";
+import CellStyleSelector from "./components/CellStyleSelector";
 
 const App: Component = () => {
     let canvasRef: HTMLCanvasElement | null = null;
@@ -27,33 +28,38 @@ const App: Component = () => {
     const [cellSize, setCellSize] = createSignal(state.options.cellSize);
     const [selected, setSelected] = createSignal<CellStyleKey>(nothing.id);
 
-    const isSelected = createSelector(selected);
-
     onMount(() => {
         if (canvasRef !== null) {
             initBuilder(state, canvasRef);
         }
 
-        window.addEventListener("mousedown", handleMouseDown);
-        window.addEventListener("mouseup", handleMouseUp);
-        window.addEventListener("touchstart", handleTouchStart);
-        window.addEventListener("touchend", handleTouchEnd);
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("touchmove", handleTouchMove);
+        window.addEventListener("mousedown", handleDown);
+        window.addEventListener("mouseup", handleUp);
+        window.addEventListener("touchstart", handleDown);
+        window.addEventListener("touchend", handleUp);
+        window.addEventListener("mousemove", handleMove);
+        window.addEventListener("touchmove", handleMove);
     });
 
     function refresh() {
         initBuilder(state, canvasRef!);
     }
 
-    function getRelativeXY(e: MouseEvent): Result<Vec2> {
+    function getRelativeXY(e: MouseEvent | TouchEvent): Result<Vec2> {
         if (!canvasRef) {
             return [new Error("Canvas element not in DOM")];
         }
 
         const rect = canvasRef.getBoundingClientRect();
-        const x = e.clientX - rect.x;
-        const y = e.clientY - rect.y;
+        let x = -1;
+        let y = -1;
+        if (e instanceof MouseEvent) {
+            x = e.clientX - rect.x;
+            y = e.clientY - rect.y;
+        } else {
+            x = e.touches[0].clientX - rect.x;
+            y = e.touches[0].clientY - rect.y;
+        }
 
         if (x < 0 || y < 0) {
             return [new Error("Not on canvas")]
@@ -62,7 +68,7 @@ const App: Component = () => {
         return [undefined, [x, y]];
     }
 
-    function handleMouseDown(e: MouseEvent) {
+    function handleDown(e: MouseEvent | TouchEvent) {
         const [error, xy] = getRelativeXY(e);
         if (error) {
             return;
@@ -73,7 +79,7 @@ const App: Component = () => {
         updateDragCoords(state, xy)
     }
 
-    function handleMouseMove(e: MouseEvent) {
+    function handleMove(e: MouseEvent | TouchEvent) {
         const [error, xy] = getRelativeXY(e);
         if (error) {
             updateDragCoords(state)
@@ -83,20 +89,9 @@ const App: Component = () => {
         updateDragCoords(state, undefined, xy)
     }
 
-    function handleMouseUp() {
+    function handleUp() {
         updateArea(state, selected());
         updateDragCoords(state)
-    }
-
-    function handleTouchStart(e: TouchEvent) {
-    }
-
-    function handleTouchEnd(e: TouchEvent) {
-        console.log("tend", e)
-    }
-
-    function handleTouchMove(e: TouchEvent) {
-        console.log("tmove", e)
     }
 
     function updateWidth(e: Event) {
@@ -120,51 +115,27 @@ const App: Component = () => {
         setCellSize(value)
     }
 
+    function updateSelected(e: Event) {
+        const target = e.target as HTMLSelectElement;
+        
+        setSelected(target.value);
+    }
+
     return (
         <div class={styles.App}>
             <header class={styles.header}>
                 <h1>Kill the Evil Map Builder</h1>
+                <div class={styles.controls}>
+                <CellStyleSelector value={selected()} onChange={updateSelected} />
+                    <NumberInput value={width()} label="Width" onBlur={refresh} onChange={updateWidth} />
+                    <NumberInput value={height()} label="Height" onBlur={refresh} onChange={updateHeight} />
+                    <NumberInput value={cellSize()} label="Cell Size" onBlur={refresh} onChange={updateCellSize} />
+                </div>
             </header>
 
             <main class={styles.main}>
-                <section>
-                    <h2>Dimensions</h2>
-                    <div class={styles.controls}>
-                        <NumberInput value={width()} label="Width" onBlur={refresh} onChange={updateWidth} />
-                        <NumberInput value={height()} label="Height" onBlur={refresh} onChange={updateHeight} />
-                        <NumberInput value={cellSize()} label="Cell Size" onBlur={refresh} onChange={updateCellSize} />
-                    </div>
-                </section>
-
-                <br />
-
-                <section>
-                    <h2>Cell Styles</h2>
-                    <div class={styles.controls}>
-                        <For each={Object.keys(cellStyles)}>
-                            {(cellStyleId) => (
-                                <CellStyleButton
-                                    active={isSelected(cellStyleId)}
-                                    cellStyleId={cellStyleId}
-                                    onClick={() => setSelected(cellStyleId)}
-                                />
-                            )}
-                        </For>
-                    </div>
-                </section>
-                <br />
                 <canvas ref={ref => canvasRef = ref} />
             </main>
-
-            <footer class={styles.footer}>
-                <span>
-                    Built by <a href="https://github.com/chdwck">@chdwck</a>
-                </span>
-                <span>
-                    Read my blog @{" "}
-                    <a href="https://www.wicksworld.dev">www.wicksworld.dev</a>
-                </span>
-            </footer>
         </div>
     );
 };

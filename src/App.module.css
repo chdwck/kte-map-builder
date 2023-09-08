@@ -1,49 +1,57 @@
 .App {
   position: relative;
-  min-height: 100vh;
-  background-color: #282c34;
   padding-bottom: 55px;
 }
 
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  padding: 16px;
+  align-items: center;
+  justify-content: space-between;
   font-size: 20px;
+  padding: 0 16px;
   color: white;
+  height: 60px;
 }
 
 .header h1 {
+  font-size: 20px;
   margin: 0;
 }
 
 .main {
-  padding: 16px;
-  max-width: 100%;
+  border-top: 1px solid white;
+  position: fixed;
+  top: 60px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
   overflow: scroll;
 }
 
-.footer {
-  padding: 8px;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  border-top: 1px solid white;
+@media screen and (max-width: 830px) {
+    .header {
+        flex-direction: column;
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .main {
+        top: 92px;
+    }
+}
+
+@media screen and (max-width: 567px) {
+    .main {
+        top: 135px;
+    }
+}
+
+.controls {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.footer a {
-  font-weight: bold;
-  color: white;
-  text-decoration: none;
-}
-
-.footer a:hover {
-  text-decoration: underline;
 }
 
 .cell {
