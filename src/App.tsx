@@ -3,7 +3,7 @@ import {
     Component,
     onMount,
     createMemo,
-    createEffect
+    For,
 } from "solid-js";
 
 import styles from "./App.module.css";
@@ -12,11 +12,13 @@ import {
     nothing,
     Vec2,
     Result,
-    CellStyleKey
+    CellStyleKey,
+    cellStyles
 } from "./webgl-builder/common";
 import { initBuilder, updateArea, updateDragCoords, updateOption } from "./webgl-builder";
-import { initState, stringifyMatrix } from "./webgl-builder/state";
+import { MetaFieldset as MetaFieldsetT, initState, stringifyState, updateMetaFieldSet } from "./webgl-builder/state";
 import CellStyleSelector from "./components/CellStyleSelector";
+import MetaFieldset from "./components/MetaFieldset";
 
 function isMobileWidth() {
     return window.innerWidth <= 960;
@@ -30,12 +32,14 @@ const App: Component = () => {
     const [height, setHeight] = createSignal(state.options.cellCountY);
     const [cellSize, setCellSize] = createSignal(state.options.cellSize);
     const [selected, setSelected] = createSignal<CellStyleKey>(nothing.id);
-    const [showArray, setShowArray] = createSignal(false);
-    const [stringMatrix, setStringMatrix] = createSignal('');
+    const [stringState, setStringState] = createSignal('');
     const [isEditing, setIsEditing] = createSignal(true);
     const [isMobile, setIsMobile] = createSignal(isMobileWidth());
+    const [isSidebarOpen, setIsSidebarOpen] = createSignal(false);
+    const [metaFieldsets, setMetaFieldsets] = createSignal<Record<string, MetaFieldsetT>>({});
 
-    const editModeEmoji = createMemo(() => !isEditing() ? 'Scrolling' : 'Editing');
+    const editModeText = createMemo(() => !isEditing() ? 'Scrolling' : 'Editing');
+    const metaFieldsetKeys = createMemo(() => Object.keys(metaFieldsets()));
 
     onMount(() => {
         if (canvasRef !== null) {
@@ -96,7 +100,8 @@ const App: Component = () => {
             return;
         }
 
-        if (Object.hasOwn(e, 'clientX')) {
+        const isMouseEvent = Object.hasOwn(e, 'clientX');
+        if (isMouseEvent) {
             e.preventDefault();
         }
 
@@ -117,7 +122,8 @@ const App: Component = () => {
 
     function handleUp() {
         updateArea(state, selected());
-        updateDragCoords(state)
+        updateDragCoords(state);
+        setMetaFieldsets({ ...state.metaFieldsets });
     }
 
     function updateWidth(e: Event) {
@@ -148,42 +154,45 @@ const App: Component = () => {
     }
 
     function selectText() {
-        if (textareaRef) {
-            textareaRef.select();
-        }
-    }
-
-    function toggleCodeView() {
-        const next = !showArray();
-        if (next) {
-            setStringMatrix(stringifyMatrix(state));
-            setTimeout(() => {
-                selectText();
-            }, 0)
-        }
-        setShowArray(next)
+        setStringState(stringifyState(state));
+        setTimeout(() => {
+            if (textareaRef) {
+                textareaRef.select();
+            }
+        }, 0)
     }
 
     function toggleEditMode() {
         setIsEditing(!isEditing());
     }
 
+    function toggleSidebar() {
+        setIsSidebarOpen(!isSidebarOpen());
+    }
+
+    function handleMetaFieldsetChange(
+        cellKey: string,
+        fieldKey: keyof MetaFieldsetT, 
+        value: string
+        ) {
+        updateMetaFieldSet(state, cellKey, fieldKey, value);
+        setMetaFieldsets({ ...state.metaFieldsets });
+    }
+
     return (
         <div class={styles.App}>
             <header class={styles.header}>
                 <h1>Kill the Evil Map Builder</h1>
-                <div class={styles.controls}>
-                    {isMobile() && <button onClick={toggleEditMode}>{editModeEmoji()}</button>}
-                    <button onClick={toggleCodeView}>Copy Data View</button>
-                    <CellStyleSelector value={selected()} onChange={updateSelected} />
-                    <NumberInput value={width()} label="W" onBlur={refresh} onChange={updateWidth} />
-                    <NumberInput value={height()} label="H" onBlur={refresh} onChange={updateHeight} />
-                    <NumberInput value={cellSize()} label="Cell Size" onBlur={refresh} onChange={updateCellSize} />
-                </div>
+                <button onClick={toggleSidebar} class={styles.hamburger}>🍔</button>
             </header>
 
-            <main class={styles.main} style={{ overflow: isEditing() && isMobile() ? 'hidden' : 'scroll' }}>
-                <dialog open={showArray()} class={styles.dialog}>
+            <aside class={styles.sidebar} classList={{ [styles.open]: isSidebarOpen() }}>
+                <div>
+                    {isMobile() && <button onClick={toggleEditMode}>{editModeText()}</button>}
+                    <CellStyleSelector value={selected()} onChange={updateSelected} />
+                    <NumberInput value={width()} label="Width" onBlur={refresh} onChange={updateWidth} />
+                    <NumberInput value={height()} label="Height" onBlur={refresh} onChange={updateHeight} />
+                    <NumberInput value={cellSize()} label="Cell Size" onBlur={refresh} onChange={updateCellSize} />
                     <div>
                         <h2>Copy Map Data</h2>
                         <textarea
@@ -192,11 +201,26 @@ const App: Component = () => {
                             onFocus={e => e.preventDefault()}
                             onClick={selectText}
                         >
-                            {stringMatrix()}
+                            {stringState()}
                         </textarea>
-                        <button onClick={toggleCodeView}>Close</button>
                     </div>
-                </dialog>
+                    <div class={styles.meta}>
+                        <h2>Meta</h2>
+                        <For each={metaFieldsetKeys()}>
+                            {(cellKey: string) => (
+                                <MetaFieldset
+                                    cell={cellStyles[state.cellMap[cellKey]]} 
+                                    fieldset={state.metaFieldsets[cellKey]} 
+                                    onChange={(fieldKey, value) => handleMetaFieldsetChange(cellKey, fieldKey, value)}
+                                    cellKey={cellKey} 
+                                />)
+                            }
+                        </For>
+                    </div>
+                </div>
+            </aside>
+
+            <main class={styles.main} style={{ overflow: isEditing() && isMobile() ? 'hidden' : 'scroll' }}>
                 <canvas ref={ref => canvasRef = ref} />
             </main>
         </div>

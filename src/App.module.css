@@ -1,3 +1,14 @@
+:root {
+    --header-height: 60px;
+    --sidebar-width: 300px;
+}
+
+@media screen and (max-width: 960px) {
+    :root {
+        /* --header-height: 92px; */
+    }
+}
+
 .App {
   position: relative;
   padding-bottom: 55px;
@@ -14,7 +25,7 @@
   font-size: 20px;
   padding: 0 16px;
   color: white;
-  height: 60px;
+  height: var(--header-height);
 }
 
 .header h1 {
@@ -25,29 +36,49 @@
 .main {
   border-top: 1px solid white;
   position: fixed;
-  top: 60px;
+  top: var(--header-height);
   bottom: 0px;
   left: 0px;
   right: 0px;
   overflow: scroll;
 }
 
-@media screen and (max-width: 960px) {
-    .header {
-        flex-direction: column;
-        padding: 16px;
-        gap: 12px;
-    }
-
-    .main {
-        top: 92px;
-    }
+.meta {
+   overflow-y: scroll; 
 }
 
-@media screen and (max-width: 730px) {
-    .main {
-        top: 135px;
-    }
+.sidebar {
+    background-color: black;
+    z-index: 10;
+    position: fixed;
+    top: var(--header-height);
+    max-height: calc(100vh - var(--header-height));
+    width: var(--sidebar-width);
+    right: calc(-1 * var(--sidebar-width));
+    bottom: 0;
+    transition: right;
+    transition-duration: 200ms;
+}
+
+.sidebar > div {
+    padding-left: 12px;
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar.open {
+    right: 0px;
+}
+
+.hamburger {
+    background: none;
+    font-size: 20px;
+}
+
+canvas {
+  margin-right: var(--sidebar-width);
 }
 
 .dialog {

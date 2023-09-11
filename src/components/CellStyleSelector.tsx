@@ -11,7 +11,7 @@ type CellStyleSelectorProps = {
 const CellStyleSelector: Component<CellStyleSelectorProps> = (props) => {
     return (
         <div class={styles.container}>
-            <div class={styles.colorBox} style={{ background: cellStyles[props.value].color }} />
+            <label for="cell-style-selector">Cell Type</label>
             <select value={props.value} id="cell-style-selector" onChange={props.onChange} >
                 <For each={cellStyleValues}>
                     {(cellStyle) => (
@@ -21,6 +21,7 @@ const CellStyleSelector: Component<CellStyleSelectorProps> = (props) => {
                     )}
                 </For>
             </select>
+            <div class={styles.colorBox} style={{ background: cellStyles[props.value].color }} />
         </div>
     );
 }
