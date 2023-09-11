@@ -121,4 +121,69 @@ export const cellStyles = {
     [battleArea.id]: battleArea
 } as const;
 
+export const fieldTypes = {
+    text: 'text',
+    number: 'number',
+    select: 'select'
+} as const;
+type ValueOf<T> = T[keyof T];
+
+export type FieldType = ValueOf<typeof fieldTypes>;
+
+export type FieldDef = {
+    type: FieldType;
+    value: string;
+    options?: string[];
+}
+
+export function createTextFieldDef(): FieldDef {
+    return {
+        type: fieldTypes.text,
+        value: '',
+    }
+}
+
+export function createNumberFieldDef(): FieldDef {
+    return {
+        type: fieldTypes.number,
+        value: '1',
+    }
+}
+
+export function createSelectFieldDef(options: Array<string>): FieldDef {
+    return {
+        type: fieldTypes.select,
+        value: options[0],
+        options
+    }
+}
+
+export type MetaFieldset = Record<string, FieldDef>;
+
+function createLoreFieldSet(): MetaFieldset {
+    return {
+        content: createTextFieldDef()
+    }
+}
+
+function createEnemyCellFieldSet(): MetaFieldset {
+    return {
+        type: createSelectFieldDef(['skeleton', 'chopper', 'chonker', 'knight']),
+        drops: createSelectFieldDef(['weapon', 'spell', 'health', 'none']),
+        dropQuality: createNumberFieldDef(),
+    };
+}
+
+function createTreasureFieldSet(): MetaFieldset {
+    return {
+        quality: createNumberFieldDef()
+    };
+}
+
+export const metaFieldGenerators = {
+    [lore.id]: createLoreFieldSet,
+    [enemy.id]: createEnemyCellFieldSet,
+    [treasure.id]: createTreasureFieldSet,
+} as const;
+
 export type CellStyleKey = keyof typeof cellStyles; 

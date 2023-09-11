@@ -1,6 +1,5 @@
 import { For, Component, createMemo, Switch, Match } from "solid-js";
-import { CellStyle } from "../webgl-builder/common";
-import { FieldType, MetaFieldset as MetaFieldsetT, fieldTypes } from "../webgl-builder/state";
+import { CellStyle, FieldType, MetaFieldset as MetaFieldsetT, fieldTypes } from "../webgl-builder/common";
 
 type MetaFieldsetProps = {
     fieldset: MetaFieldsetT;

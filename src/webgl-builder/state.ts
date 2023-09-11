@@ -1,4 +1,4 @@
-import { CellStyle, CellStyleKey, Vec2, cellStyles, enemy, lore, nothing } from "./common";
+import { CellStyle, CellStyleKey, MetaFieldset, Vec2, cellStyles, metaFieldGenerators, nothing } from "./common";
 import { clearStoredState, loadStoredState } from "./storage";
 
 export type MapBuilderOptions = {
@@ -6,64 +6,6 @@ export type MapBuilderOptions = {
     cellCountX: number;
     cellSize: number;
 };
-
-export const fieldTypes = {
-    text: 'text',
-    number: 'number',
-    select: 'select'
-} as const;
-type ValueOf<T> = T[keyof T];
-
-export type FieldType = ValueOf<typeof fieldTypes>;
-
-export type FieldDef = {
-    type: FieldType;
-    value: string;
-    options?: string[];
-}
-
-export function createTextFieldDef(): FieldDef {
-    return {
-        type: fieldTypes.text,
-        value: '',
-    }
-}
-
-export function createNumberFieldDef(): FieldDef {
-    return {
-        type: fieldTypes.number,
-        value: '1',
-    }
-}
-
-export function createSelectFieldDef(options: Array<string>): FieldDef {
-    return {
-        type: fieldTypes.select,
-        value: options[0],
-        options
-    }
-}
-
-export type MetaFieldset = Record<string, FieldDef>;
-
-function createLoreFieldSet(): MetaFieldset {
-    return {
-        content: createTextFieldDef()
-    }
-}
-
-function createEnemyCellFieldSet(): MetaFieldset {
-    return {
-        type: createSelectFieldDef(['skeleton', 'chopper', 'chonker', 'knight']),
-        drops: createSelectFieldDef(['weapon', 'spell', 'health', 'none']),
-        dropQuality: createNumberFieldDef(),
-    };
-}
-
-export const metaFieldGenerators = {
-    [lore.id]: createLoreFieldSet,
-    [enemy.id]: createEnemyCellFieldSet,
-} as const;
 
 export type MapBuilderState = {
     cellMap: Record<string, CellStyleKey>;
@@ -131,7 +73,7 @@ export function updateMetaFieldSet(
         return;
     }
 
-    field.value = value;
+    field.value = value; 
 }
 
 export function getCellStyle(state: MapBuilderState, pos: Vec2): CellStyle {
@@ -167,7 +109,7 @@ export function stringifyState(state: MapBuilderState): string {
         const fieldsetKey = metaFieldsetKeys[i];
         const fieldset = state.metaFieldsets[fieldsetKey];
         const fieldKeys = Object.keys(fieldset);
-        cleanFieldsets[fieldsetKey] = {};
+        cleanFieldsets[fieldsetKey] = {}; 
         for (let j = 0; j < fieldKeys.length; j++) {
             const fieldKey = fieldKeys[j];
             cleanFieldsets[fieldsetKey][fieldKey] = state.metaFieldsets[fieldsetKey][fieldKey].value;
