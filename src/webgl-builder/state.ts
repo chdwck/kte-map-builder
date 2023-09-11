@@ -109,6 +109,8 @@ export function setCell(state: MapBuilderState, cellPos: Vec2, key: CellStyleKey
         const metaFieldGenerator = metaFieldGenerators[key];
         if (metaFieldGenerator) {
             state.metaFieldsets[_cellKey] = metaFieldGenerator()
+        } else if (state.metaFieldsets[_cellKey]) {
+            delete state.metaFieldsets[_cellKey]
         }
     }
 }
@@ -129,7 +131,7 @@ export function updateMetaFieldSet(
         return;
     }
 
-    field.value = value; 
+    field.value = value;
 }
 
 export function getCellStyle(state: MapBuilderState, pos: Vec2): CellStyle {
@@ -165,7 +167,7 @@ export function stringifyState(state: MapBuilderState): string {
         const fieldsetKey = metaFieldsetKeys[i];
         const fieldset = state.metaFieldsets[fieldsetKey];
         const fieldKeys = Object.keys(fieldset);
-        cleanFieldsets[fieldsetKey] = {}; 
+        cleanFieldsets[fieldsetKey] = {};
         for (let j = 0; j < fieldKeys.length; j++) {
             const fieldKey = fieldKeys[j];
             cleanFieldsets[fieldsetKey][fieldKey] = state.metaFieldsets[fieldsetKey][fieldKey].value;
