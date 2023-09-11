@@ -100,6 +100,14 @@ export const lore: CellStyle = {
     shaderColor: asVec4(loreColor)
 };
 
+const battleAreaColor = "#ff6500";
+export const battleArea: CellStyle = {
+    id: 'B',
+    name: 'Battle Area',
+    color: battleAreaColor,
+    shaderColor: asVec4(battleAreaColor)
+};
+
 export const cellStyles = {
     [nothing.id]: nothing,
     [floor.id]: floor,
@@ -109,7 +117,8 @@ export const cellStyles = {
     [treasure.id]: treasure,
     [start.id]: start,
     [end.id]: end,
-    [lore.id]: lore
+    [lore.id]: lore,
+    [battleArea.id]: battleArea
 } as const;
 
 export type CellStyleKey = keyof typeof cellStyles; 
