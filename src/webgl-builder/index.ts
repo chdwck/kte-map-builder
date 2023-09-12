@@ -1,8 +1,7 @@
-import { BLACK, CellStyleKey, Vec2, Vec4, WHITE, getXYRanges } from "./common";
+import { BLACK, Vec2, Vec4, WHITE, getXYRanges } from "./common";
 import { createShader } from "./helpers";
 import { pixelSpace_vertexShaderSrc, rgbInput_fragmentShaderSrc } from "./shaders";
-import { MapBuilderState, canvasHeightPx, canvasWidthPx, getCellStyle, setCell, MapBuilderOptions } from "./state";
-import { storeState } from "./storage";
+import { MapBuilderState, canvasHeightPx, canvasWidthPx, getCellStyle } from "./state";
 
 // set temp state on window
 declare global {
@@ -125,37 +124,6 @@ export function updateDragCoords(state: MapBuilderState, start?: Vec2, end?: Vec
     window.__kteDragCoords = undefined;
 }
 
-export function updateArea(state: MapBuilderState, style: CellStyleKey) {
-    if (!window.__kteDragCoords) {
-        return;
-    }
-    const [xStart, yStart, xEnd, yEnd] = getXYRanges(window.__kteDragCoords);
-
-    for (let y = yStart; y <= yEnd; y++) {
-        for (let x = xStart; x <= xEnd; x++) {
-            setCell(state, [x, y], style);
-        }
-    }
-
-    window.__kteDragCoords = undefined;
-    const success = storeState(state);
-    if (!success) {
-        alert("Failed to store map state.")
-    }
-}
-
-export function updateOption(
-    state: MapBuilderState,
-    field: keyof MapBuilderOptions,
-    value: number
-) {
-    state.options[field] = value;
-    window.__kteGl.uniform1f(window.__kteUniforms.cellSize, state.options.cellSize);
-    const success = storeState(state);
-    if (!success) {
-        alert("Failed to store map state.")
-    }
-}
 
 function render(state: MapBuilderState) {
     for (let y = 0; y < state.options.cellCountY; y++) {

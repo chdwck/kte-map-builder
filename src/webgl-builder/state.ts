@@ -1,4 +1,4 @@
-import { CellStyle, CellStyleKey, MetaFieldset, Result, Vec2, cellStyles, metaFieldGenerators, nothing } from "./common";
+import { CellStyle, CellStyleKey, MetaFieldset, Result, Vec2, cellStyles, getXYRanges, metaFieldGenerators, nothing } from "./common";
 import { clearStoredState, loadStoredState, storeState } from "./storage";
 
 export type MapBuilderOptions = {
@@ -37,6 +37,38 @@ export function initState(): MapBuilderState {
     }
 
     return prevState;
+}
+
+export function updateArea(state: MapBuilderState, style: CellStyleKey) {
+    if (!window.__kteDragCoords) {
+        return;
+    }
+    const [xStart, yStart, xEnd, yEnd] = getXYRanges(window.__kteDragCoords);
+
+    for (let y = yStart; y <= yEnd; y++) {
+        for (let x = xStart; x <= xEnd; x++) {
+            setCell(state, [x, y], style);
+        }
+    }
+
+    window.__kteDragCoords = undefined;
+    const success = storeState(state);
+    if (!success) {
+        alert("Failed to store map state.")
+    }
+}
+
+export function updateOption(
+    state: MapBuilderState,
+    field: keyof MapBuilderOptions,
+    value: number
+) {
+    state.options[field] = value;
+    window.__kteGl.uniform1f(window.__kteUniforms.cellSize, state.options.cellSize);
+    const success = storeState(state);
+    if (!success) {
+        alert("Failed to store map state.")
+    }
 }
 
 export function setCell(state: MapBuilderState, cellPos: Vec2, key: CellStyleKey) {
@@ -104,7 +136,7 @@ export function stringifyState(state: MapBuilderState): string {
         const fieldsetKey = cellKeys[i];
         const fieldset = state.metaFieldsets[fieldsetKey];
         const fieldKeys = Object.keys(fieldset);
-        cleanFieldsets[fieldsetKey] = {}; 
+        cleanFieldsets[fieldsetKey] = {};
         for (let j = 0; j < fieldKeys.length; j++) {
             const fieldKey = fieldKeys[j];
             cleanFieldsets[fieldsetKey][fieldKey] = state.metaFieldsets[fieldsetKey][fieldKey].value;
@@ -115,27 +147,27 @@ export function stringifyState(state: MapBuilderState): string {
     return JSON.stringify(res);
 }
 
-export function parseState(stateStr: string): Result<MapBuilderState> {
+export function parseState(state: MapBuilderState, stateStr: string): Error | undefined {
     try {
         const parsed = JSON.parse(stateStr);
         if (!parsed.matrix) {
-            return [new Error("Missing field matrix.")];
+            return new Error("Missing field matrix.");
+
         }
 
         if (!parsed.meta) {
-            return [new Error("Missing field meta.")];
+            return new Error("Missing field meta.");
         }
-        
-        const state = initState();
+
         state.options.cellCountY = parsed.matrix.length;
         state.options.cellCountX = parsed.matrix[0].length;
-         
+
         for (let y = 0; y < parsed.matrix.length; y++) {
             for (let x = 0; x < parsed.matrix[0].length; x++) {
                 const cell = parsed.matrix[y][x];
                 if (cell !== nothing.id && cellStyles[cell]) {
                     state.cellMap[cellKey([x, y])] = cell;
-                } 
+                }
             }
         }
 
@@ -146,19 +178,19 @@ export function parseState(stateStr: string): Result<MapBuilderState> {
             const fieldKeys = Object.keys(fieldset);
             const cellType = state.cellMap[cellKey];
             if (cellType === nothing.id || !cellStyles[cellType]) {
-                continue; 
+                continue;
             }
             state.metaFieldsets[cellKey] = metaFieldGenerators[cellType]();
             for (let j = 0; j < fieldKeys.length; j++) {
-               const fieldKey = fieldKeys[j];
-               const fieldVal = fieldset[fieldKey];
-               state.metaFieldsets[cellKey][fieldKey].value = fieldVal;
+                const fieldKey = fieldKeys[j];
+                const fieldVal = fieldset[fieldKey];
+                state.metaFieldsets[cellKey][fieldKey].value = fieldVal;
             }
         }
 
-        return [undefined, state];
+        storeState(state);
     } catch (e: any) {
-       return [e as Error];
+        return new Error("Failed to parse uploaded file. Make sure it is in the same format as a downloaded file.");
     }
 }
 

@@ -16,11 +16,11 @@ import {
     cellStyles,
     MetaFieldset as MetaFieldsetT,
 } from "./webgl-builder/common";
-import { initBuilder, updateArea, updateDragCoords, updateOption } from "./webgl-builder";
-import { initState, parseState, stringifyState, updateMetaFieldSet } from "./webgl-builder/state";
+import { initBuilder, updateDragCoords } from "./webgl-builder";
+import { initState, parseState, stringifyState, updateMetaFieldSet, updateArea, updateOption } from "./webgl-builder/state";
 import CellStyleSelector from "./components/CellStyleSelector";
 import MetaFieldset from "./components/MetaFieldset";
-import { clearStoredState, storeState } from "./webgl-builder/storage";
+import { clearStoredState } from "./webgl-builder/storage";
 
 function isMobileWidth() {
     return window.innerWidth <= 960;
@@ -149,7 +149,6 @@ const App: Component = () => {
 
     function updateSelected(e: Event) {
         const target = e.target as HTMLSelectElement;
-
         setSelected(target.value);
     }
 
@@ -188,14 +187,11 @@ const App: Component = () => {
         const target = e.target as HTMLInputElement;
         const file = target.files![0];
         const asText = await file.text();
-        const [error, uploadedState] = parseState(asText);
+        const error = parseState(state, asText);
         if (error) {
-            window.alert("Failed to parse uploaded file. Make sure it is in the same format as a downloaded file.");
+            window.alert(error.message);
             return;
         }
-       
-        state = uploadedState;
-        storeState(uploadedState);
         refresh();
     }
 
