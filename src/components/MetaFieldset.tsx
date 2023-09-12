@@ -30,7 +30,7 @@ const MetaFieldset: Component<MetaFieldsetProps> = (props) => {
         return field.options ?? [];
     }
 
-    function handleTextBlur(e: Event, key: string) {
+    function handleBlur(e: Event, key: string) {
         const target = e.target as HTMLInputElement;
         props.onChange(key, `${target.value}`)
     }
@@ -48,7 +48,7 @@ const MetaFieldset: Component<MetaFieldsetProps> = (props) => {
                                     id={getFieldId(key)}
                                     type="text"
                                     value={getFieldValue(key)}
-                                    onBlur={e => handleTextBlur(e, key)}
+                                    onBlur={e => handleBlur(e, key)}
                                 />
                             </Match>
                             <Match when={getFieldType(key) === fieldTypes.number}>
@@ -57,14 +57,14 @@ const MetaFieldset: Component<MetaFieldsetProps> = (props) => {
                                     type="number"
                                     min={1}
                                     value={parseInt(getFieldValue(key))}
-                                    onBlur={e => handleTextBlur(e, key)}
+                                    onBlur={e => handleBlur(e, key)}
                                 />
                             </Match>
                             <Match when={getFieldType(key) === fieldTypes.select}>
                                 <select
                                     id={getFieldId(key)}
                                     value={getFieldValue(key)}
-                                    onSelect={e => handleTextBlur(e, key)}
+                                    onChange={e => handleBlur(e, key)}
                                 >
                                     <For each={getFieldOptions(key)}>
                                         {optionVal => (

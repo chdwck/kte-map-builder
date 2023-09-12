@@ -1,5 +1,5 @@
-import { CellStyle, CellStyleKey, MetaFieldset, Vec2, cellStyles, metaFieldGenerators, nothing } from "./common";
-import { clearStoredState, loadStoredState } from "./storage";
+import { CellStyle, CellStyleKey, MetaFieldset, Result, Vec2, cellStyles, metaFieldGenerators, nothing } from "./common";
+import { clearStoredState, loadStoredState, storeState } from "./storage";
 
 export type MapBuilderOptions = {
     cellCountY: number;
@@ -63,17 +63,16 @@ export function updateMetaFieldSet(
     fieldKey: keyof MetaFieldset,
     value: string
 ) {
-    const metaFieldset = state.metaFieldsets[cellKey];
-    if (!metaFieldset) {
+    if (!state.metaFieldsets[cellKey]) {
         return;
     }
 
-    const field = metaFieldset[fieldKey];
-    if (!field) {
+    if (!state.metaFieldsets[cellKey][fieldKey]) {
         return;
     }
 
-    field.value = value; 
+    state.metaFieldsets[cellKey][fieldKey].value = value;
+    storeState(state);
 }
 
 export function getCellStyle(state: MapBuilderState, pos: Vec2): CellStyle {
@@ -90,23 +89,19 @@ export function cellKey(pos: Vec2): string {
 }
 
 export function stringifyState(state: MapBuilderState): string {
-    let matrixStr = "[";
+    const matrix = [];
     for (let y = 0; y < state.options.cellCountY; y++) {
-        matrixStr += "\n    [";
+        const row = [];
         for (let x = 0; x < state.options.cellCountX; x++) {
-            matrixStr += getCellStyle(state, [x, y]).id;
-            if (x !== state.options.cellCountX - 1) {
-                matrixStr += ", ";
-            }
+            row.push(getCellStyle(state, [x, y]).id)
         }
-        matrixStr += "],";
+        matrix.push(row)
     }
-    matrixStr += "\n]";
 
     const cleanFieldsets: Record<string, Record<string, string>> = {};
-    const metaFieldsetKeys = Object.keys(state.metaFieldsets);
-    for (let i = 0; i < metaFieldsetKeys.length; i++) {
-        const fieldsetKey = metaFieldsetKeys[i];
+    const cellKeys = Object.keys(state.metaFieldsets);
+    for (let i = 0; i < cellKeys.length; i++) {
+        const fieldsetKey = cellKeys[i];
         const fieldset = state.metaFieldsets[fieldsetKey];
         const fieldKeys = Object.keys(fieldset);
         cleanFieldsets[fieldsetKey] = {}; 
@@ -115,10 +110,56 @@ export function stringifyState(state: MapBuilderState): string {
             cleanFieldsets[fieldsetKey][fieldKey] = state.metaFieldsets[fieldsetKey][fieldKey].value;
         }
     }
-    return `{
-        matrix: ${matrixStr},
-        meta: ${JSON.stringify(cleanFieldsets)}
-    }`
+
+    const res = { matrix, meta: cleanFieldsets };
+    return JSON.stringify(res);
+}
+
+export function parseState(stateStr: string): Result<MapBuilderState> {
+    try {
+        const parsed = JSON.parse(stateStr);
+        if (!parsed.matrix) {
+            return [new Error("Missing field matrix.")];
+        }
+
+        if (!parsed.meta) {
+            return [new Error("Missing field meta.")];
+        }
+        
+        const state = initState();
+        state.options.cellCountY = parsed.matrix.length;
+        state.options.cellCountX = parsed.matrix[0].length;
+         
+        for (let y = 0; y < parsed.matrix.length; y++) {
+            for (let x = 0; x < parsed.matrix[0].length; x++) {
+                const cell = parsed.matrix[y][x];
+                if (cell !== nothing.id && cellStyles[cell]) {
+                    state.cellMap[cellKey([x, y])] = cell;
+                } 
+            }
+        }
+
+        const cellKeys = Object.keys(parsed.meta);
+        for (let i = 0; i < cellKeys.length; i++) {
+            const cellKey = cellKeys[i];
+            const fieldset = parsed.meta[cellKey];
+            const fieldKeys = Object.keys(fieldset);
+            const cellType = state.cellMap[cellKey];
+            if (cellType === nothing.id || !cellStyles[cellType]) {
+                continue; 
+            }
+            state.metaFieldsets[cellKey] = metaFieldGenerators[cellType]();
+            for (let j = 0; j < fieldKeys.length; j++) {
+               const fieldKey = fieldKeys[j];
+               const fieldVal = fieldset[fieldKey];
+               state.metaFieldsets[cellKey][fieldKey].value = fieldVal;
+            }
+        }
+
+        return [undefined, state];
+    } catch (e: any) {
+       return [e as Error];
+    }
 }
 
 

@@ -13,12 +13,14 @@ import {
     Vec2,
     Result,
     CellStyleKey,
-    cellStyles
+    cellStyles,
+    MetaFieldset as MetaFieldsetT,
 } from "./webgl-builder/common";
 import { initBuilder, updateArea, updateDragCoords, updateOption } from "./webgl-builder";
-import { MetaFieldset as MetaFieldsetT, initState, stringifyState, updateMetaFieldSet } from "./webgl-builder/state";
+import { initState, parseState, stringifyState, updateMetaFieldSet } from "./webgl-builder/state";
 import CellStyleSelector from "./components/CellStyleSelector";
 import MetaFieldset from "./components/MetaFieldset";
+import { clearStoredState, storeState } from "./webgl-builder/storage";
 
 function isMobileWidth() {
     return window.innerWidth <= 960;
@@ -26,17 +28,15 @@ function isMobileWidth() {
 
 const App: Component = () => {
     let canvasRef: HTMLCanvasElement | null = null;
-    let textareaRef: HTMLTextAreaElement | null = null;
-    const state = initState();
+    let state = initState();
     const [width, setWidth] = createSignal(state.options.cellCountX);
     const [height, setHeight] = createSignal(state.options.cellCountY);
     const [cellSize, setCellSize] = createSignal(state.options.cellSize);
     const [selected, setSelected] = createSignal<CellStyleKey>(nothing.id);
-    const [stringState, setStringState] = createSignal('');
     const [isEditing, setIsEditing] = createSignal(true);
     const [isMobile, setIsMobile] = createSignal(isMobileWidth());
     const [isSidebarOpen, setIsSidebarOpen] = createSignal(false);
-    const [metaFieldsets, setMetaFieldsets] = createSignal<Record<string, MetaFieldsetT>>({});
+    const [metaFieldsets, setMetaFieldsets] = createSignal<Record<string, MetaFieldsetT>>(state.metaFieldsets);
 
     const editModeText = createMemo(() => !isEditing() ? 'Scrolling' : 'Editing');
     const metaFieldsetKeys = createMemo(() => Object.keys(metaFieldsets()));
@@ -153,15 +153,6 @@ const App: Component = () => {
         setSelected(target.value);
     }
 
-    function selectText() {
-        setStringState(stringifyState(state));
-        setTimeout(() => {
-            if (textareaRef) {
-                textareaRef.select();
-            }
-        }, 0)
-    }
-
     function toggleEditMode() {
         setIsEditing(!isEditing());
     }
@@ -172,12 +163,50 @@ const App: Component = () => {
 
     function handleMetaFieldsetChange(
         cellKey: string,
-        fieldKey: keyof MetaFieldsetT, 
+        fieldKey: keyof MetaFieldsetT,
         value: string
-        ) {
+    ) {
         updateMetaFieldSet(state, cellKey, fieldKey, value);
         setMetaFieldsets({ ...state.metaFieldsets });
     }
+
+    function downloadData() {
+        const stringifiedState = stringifyState(state);
+        const asBlob = new Blob([stringifiedState], { type: 'text/json' });
+        const downloadLink = document.createElement('a');
+        downloadLink.download = "kte-map.json";
+        downloadLink.href = window.URL.createObjectURL(asBlob);
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.onclick = () => {
+            downloadLink.remove();
+        }
+        downloadLink.click();
+    }
+
+    async function handleFileChange(e: Event) {
+        const target = e.target as HTMLInputElement;
+        const file = target.files![0];
+        const asText = await file.text();
+        const [error, uploadedState] = parseState(asText);
+        if (error) {
+            window.alert("Failed to parse uploaded file. Make sure it is in the same format as a downloaded file.");
+            return;
+        }
+       
+        state = uploadedState;
+        storeState(uploadedState);
+        refresh();
+    }
+
+    function clearLocalData() {
+        const confirmed = window.confirm("Are you sure? This will delete all current map data.");
+        if (confirmed) {
+            clearStoredState();
+            window.location.reload();
+        }
+    }
+
 
     return (
         <div class={styles.App}>
@@ -188,35 +217,44 @@ const App: Component = () => {
 
             <aside class={styles.sidebar} classList={{ [styles.open]: isSidebarOpen() }}>
                 <div>
-                    {isMobile() && <button onClick={toggleEditMode}>{editModeText()}</button>}
-                    <CellStyleSelector value={selected()} onChange={updateSelected} />
-                    <NumberInput value={width()} label="Width" onBlur={refresh} onChange={updateWidth} />
-                    <NumberInput value={height()} label="Height" onBlur={refresh} onChange={updateHeight} />
-                    <NumberInput value={cellSize()} label="Cell Size" onBlur={refresh} onChange={updateCellSize} />
-                    <div>
-                        <h2>Copy Map Data</h2>
-                        <textarea
-                            ref={ref => textareaRef = ref}
-                            onChange={e => e.preventDefault()}
-                            onFocus={e => e.preventDefault()}
-                            onClick={selectText}
-                        >
-                            {stringState()}
-                        </textarea>
-                    </div>
-                    <div class={styles.meta}>
+                    <section>
+                        <h2>Editor Settings</h2>
+                        {isMobile() && <button onClick={toggleEditMode}>{editModeText()}</button>}
+                        <CellStyleSelector value={selected()} onChange={updateSelected} />
+                        <NumberInput value={width()} label="Width" onBlur={refresh} onChange={updateWidth} />
+                        <NumberInput value={height()} label="Height" onBlur={refresh} onChange={updateHeight} />
+                        <NumberInput value={cellSize()} label="Cell Size" onBlur={refresh} onChange={updateCellSize} />
+                    </section>
+                    <section>
+                        <h2>Data</h2>
+                        <button onClick={downloadData}>Download</button>
+
+                        <br />
+                        <br />
+
+                        <button onClick={clearLocalData}>Clear Local Data</button>
+
+                        <br />
+                        <br />
+
+                        <div>
+                            <label>Upload JSON</label>
+                            <input id="upload" type="file" accept=".json" onChange={handleFileChange} />
+                        </div>
+                    </section>
+                    <section>
                         <h2>Meta</h2>
                         <For each={metaFieldsetKeys()}>
                             {(cellKey: string) => (
                                 <MetaFieldset
-                                    cell={cellStyles[state.cellMap[cellKey]]} 
-                                    fieldset={state.metaFieldsets[cellKey]} 
+                                    cell={cellStyles[state.cellMap[cellKey]]}
+                                    fieldset={state.metaFieldsets[cellKey]}
                                     onChange={(fieldKey, value) => handleMetaFieldsetChange(cellKey, fieldKey, value)}
-                                    cellKey={cellKey} 
+                                    cellKey={cellKey}
                                 />)
                             }
                         </For>
-                    </div>
+                    </section>
                 </div>
             </aside>
 

@@ -43,10 +43,6 @@
   overflow: scroll;
 }
 
-.meta {
-   overflow-y: scroll; 
-}
-
 .sidebar {
     background-color: black;
     z-index: 10;
@@ -58,6 +54,7 @@
     bottom: 0;
     transition: right;
     transition-duration: 200ms;
+    overflow-y: scroll; 
 }
 
 .sidebar > div {
